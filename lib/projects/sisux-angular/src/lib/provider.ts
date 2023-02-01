@@ -1,5 +1,11 @@
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
-import { APP_INITIALIZER, ModuleWithProviders, NgModule } from '@angular/core';
+import {
+  APP_INITIALIZER,
+  EnvironmentProviders,
+  importProvidersFrom,
+  inject,
+  makeEnvironmentProviders,
+} from '@angular/core';
 import {
   MsalBroadcastService,
   MsalGuard,
@@ -18,10 +24,21 @@ import {
 import { InternalService } from './internal.service';
 import { BasicConfiguration, Overrides } from './types';
 
-@NgModule({
-  imports: [MsalModule],
-  exports: [MsalModule],
-  providers: [
+export const provideSisux = (
+  configuration: BasicConfiguration,
+  overrides?: Overrides
+): EnvironmentProviders => {
+  const providers = [
+    importProvidersFrom([MsalModule]),
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      useFactory: () => {
+        const internalService = inject(InternalService);
+        internalService.setRootConfig(configuration, overrides);
+        return () => internalService.getServerConfiguration();
+      },
+    },
     {
       provide: MSAL_INSTANCE,
       deps: [InternalService],
@@ -45,26 +62,7 @@ import { BasicConfiguration, Overrides } from './types';
     MsalService,
     MsalGuard,
     MsalBroadcastService,
-  ],
-})
-export class SisuxModule {
-  static forRoot(
-    configuration: BasicConfiguration,
-    overrides?: Overrides
-  ): ModuleWithProviders<SisuxModule> {
-    return {
-      ngModule: SisuxModule,
-      providers: [
-        {
-          provide: APP_INITIALIZER,
-          multi: true,
-          deps: [InternalService],
-          useFactory: (internalService: InternalService) => {
-            internalService.setRootConfig(configuration, overrides);
-            return () => internalService.getServerConfiguration();
-          },
-        },
-      ],
-    };
-  }
-}
+  ];
+
+  return makeEnvironmentProviders(providers);
+};

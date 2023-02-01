@@ -1,16 +1,18 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { lastValueFrom, map, timer } from 'rxjs';
+import { BasicConfiguration, Overrides } from './types';
 
 @Injectable({
   providedIn: 'root',
 })
 export class InternalService {
-  public configuration: any | null = null;
+  public serverConfiguration: any | null = null;
+  public rootConfiguration: any | null = null;
+  public rootOverrides?: any | null = null;
 
-  constructor(private _httpClient: HttpClient) {}
+  constructor() {}
 
-  getConfiguration() {
+  getServerConfiguration() {
     return lastValueFrom(
       timer(300).pipe(
         map(() => ({
@@ -19,6 +21,11 @@ export class InternalService {
           apiUrl: 'https://jeeblyopsapi-dev.azurewebsites.net',
         }))
       )
-    ).then((config) => (this.configuration = config));
+    ).then((config) => (this.serverConfiguration = config));
+  }
+
+  setRootConfig(config: BasicConfiguration, overrides?: Overrides) {
+    this.rootConfiguration = config;
+    this.rootOverrides = overrides;
   }
 }
